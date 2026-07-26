@@ -1,0 +1,182 @@
+import pygame
+import math
+import random
+
+pygame.init()
+
+# === Config
+WIDTH, HEIGHT = 728, 400
+MAX_ENEMIES = 6
+MAX_BULLETS = 500
+ENEMY_SPEED = 1
+PLAYER_SPEED = 5
+BULLET_SPEED = 10
+MAX_FIRE_RATE_SECONDS = 0.1
+ENEMY_SPAWN_INTERVAL_MS = 500
+
+# === Window
+sight = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Stars vs Black Holes")
+
+# === Assets
+bg = pygame.image.load('Fabulous.jpg').convert()
+char_img = pygame.image.load('ChampionNeo.jpg').convert_alpha()
+projectile_img = pygame.image.load('Rainbow.jpg').convert_alpha()
+enemy_img = pygame.image.load('EnemySmal.jpg').convert_alpha()
+bulletSound = pygame.mixer.Sound("Pew.mp3")
+hitSound = pygame.mixer.Sound("ExplosiveHit.mp3")
+
+clock = pygame.time.Clock()
+font = pygame.font.SysFont('georgia', 30, True)
+
+# === Game variables
+score = 0
+score_surface = font.render(f"Score: {score}", True, (255, 0, 0))
+
+# === Sprite classes
+class Player(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = char_img
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.vel = PLAYER_SPEED
+
+    def update(self, keys):
+        dx = dy = 0
+        if keys[pygame.K_LEFT]: dx -= self.vel
+        if keys[pygame.K_RIGHT]: dx += self.vel
+        if keys[pygame.K_UP]: dy -= self.vel
+        if keys[pygame.K_DOWN]: dy += self.vel
+        self.rect.move_ip(dx, dy)
+        self.rect.clamp_ip(pygame.Rect(0, 0, WIDTH, HEIGHT))
+
+
+class Projectile(pygame.sprite.Sprite):
+    __slots__ = ("image", "rect", "dx", "dy", "vel", "active")
+
+    def __init__(self):
+        super().__init__()
+        self.image = projectile_img
+        self.rect = self.image.get_rect(center=(0,0))
+        self.vel = BULLET_SPEED
+        self.dx = self.dy = 0
+        self.active = False  # Whether the bullet is currently in use
+
+    def spawn(self, x, y, target_x, target_y):
+        self.rect.center = (x, y)
+        dx, dy = target_x - x, target_y - y
+        length = math.hypot(dx, dy) or 1
+        self.dx = dx / length
+        self.dy = dy / length
+        self.active = True
+
+    def update(self, dt):
+        if not self.active: return
+        factor = dt / 16.6667
+        self.rect.x += int(self.dx * self.vel * factor)
+        self.rect.y += int(self.dy * self.vel * factor)
+        # Remove if off-screen
+        if (self.rect.right < 0 or self.rect.left > WIDTH or
+            self.rect.bottom < 0 or self.rect.top > HEIGHT):
+            self.active = False
+            self.kill()  # remove from sprite group
+
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = enemy_img
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.vel = ENEMY_SPEED
+
+    def update(self, dt):
+        factor = dt / 16.6667
+        self.rect.x -= self.vel * factor
+        if self.rect.right < 0: self.kill()
+
+
+# === Object Pool for bullets
+bullet_pool = [Projectile() for _ in range(MAX_BULLETS)]
+
+def get_bullet():
+    for bullet in bullet_pool:
+        if not bullet.active:
+            return bullet
+    return None
+
+
+# === Sprite groups
+all_sprites = pygame.sprite.LayeredUpdates()
+bullets = pygame.sprite.Group()
+enemies = pygame.sprite.Group()
+
+man = Player(100, 200)
+all_sprites.add(man, layer=2)  # Player above bullets and enemies
+
+# Timers
+cooldown_ms = 0
+spawn_timer_ms = 0
+FIRE_COOLDOWN_MS = int(MAX_FIRE_RATE_SECONDS * 1000)
+
+# === Game loop
+run = True
+while run:
+    dt = clock.tick(60)
+    spawn_timer_ms += dt
+    if cooldown_ms > 0: cooldown_ms = max(0, cooldown_ms - dt)
+
+    # --- Events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: run = False
+        if (event.type == pygame.MOUSEBUTTONDOWN and cooldown_ms == 0):
+            bullet = get_bullet()
+            if bullet:
+                mx, my = pygame.mouse.get_pos()
+                px, py = man.rect.center
+                bullet.spawn(px, py, mx, my)
+                bullets.add(bullet)
+                all_sprites.add(bullet, layer=1)  # Bullets below player
+                bulletSound.play()
+                cooldown_ms = FIRE_COOLDOWN_MS
+
+    # --- Spawn enemies
+    if spawn_timer_ms >= ENEMY_SPAWN_INTERVAL_MS:
+        spawn_timer_ms = 0
+        if len(enemies) < MAX_ENEMIES:
+            spawn_y = random.randint(0, HEIGHT - enemy_img.get_height())
+            enemy = Enemy(WIDTH, spawn_y)
+            enemies.add(enemy)
+            all_sprites.add(enemy, layer=0)  # Enemies below bullets and player
+
+    # --- Update
+    keys = pygame.key.get_pressed()
+    man.update(keys)
+    bullets.update(dt)
+    enemies.update(dt)
+
+    # --- Collisions
+    hits = pygame.sprite.groupcollide(enemies, bullets, True, False)
+    for enemy in hits:
+        # Mark bullet as inactive
+        for bullet in hits[enemy]:
+            bullet.active = False
+            bullet.kill()
+        score += 1
+        hitSound.play()
+
+    player_hits = pygame.sprite.spritecollide(man, enemies, True)
+    if player_hits:
+        for _ in player_hits:
+            hitSound.play()
+        score += len(player_hits)
+
+    # Update score surface
+    score_surface = font.render(f"Score: {score}", True, (255,0,0))
+
+    # --- Draw
+    sight.blit(bg, (0,0))
+    all_sprites.draw(sight)
+    sight.blit(score_surface, (390,10))
+    pygame.display.flip()
+
+pygame.quit()
