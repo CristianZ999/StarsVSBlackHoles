@@ -1,0 +1,26 @@
+# Python temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual enviroments
+.venv./
+venv/
+env/
+
+# PyCharm project settings
+.idea/
+*.iml
+
+# Test and coverage files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+#Temporary files
+*.log
+*.tmp
