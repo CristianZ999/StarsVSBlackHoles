@@ -1,1 +1,0 @@
-Choose Python 3.12 as interpreter.
