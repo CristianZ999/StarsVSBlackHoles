@@ -4,18 +4,24 @@ __pycache__/
 *$py.class
 
 # Virtual enviroments
-.venv./
+.venv/
 venv/
 env/
 
 # PyCharm project settings
 .idea/
+.vscode/
 *.iml
 
 # Test and coverage files
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Build and package files
+build/
+dist/
+*.egg-info/
 
 # Operating-system files
 .DS_Store
