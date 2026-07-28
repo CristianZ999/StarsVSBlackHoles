@@ -37,8 +37,7 @@ The project received the highest possible grade.
 2. Clone this repository:
 
 ```bash
-git clone
-https://github.com/CristianZ999/StarsVSBlackHoles.git
+git clone https://github.com/CristianZ999/StarsVSBlackHoles.git
 cd StarsVSBlackHoles
 ```
 3. Install the required dependency:
