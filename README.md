@@ -69,5 +69,10 @@ All source code in this repository was written by Cristian-Eugen Zamfirescu.
 The visual and audio assets were used only for a university project and were obtained from publicly available online sources. 
 Their original sources are no longer known. No ownership is claimed over these third-party assets.
 
+## Project Status
+
+The game code is preserved in its original form as written for my second-year university assignment.
+Only the documentation and repository presentation have been updated. This allows the project to 
+reflect my programming level and design decisions at that stage of my studies.
 ## Author
 Cristian-Eugen Zamfirescu
