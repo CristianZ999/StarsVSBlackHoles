@@ -43,8 +43,8 @@ cd StarsVSBlackHoles
 3. Install the required dependency:
 
 ```bash
-python -m pip install -r
-requirements.txt
+python -m pip install -r requirements.txt
+```
 
 4. Start the game:
 
